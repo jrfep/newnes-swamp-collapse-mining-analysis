@@ -1,0 +1,63 @@
+Row,Site,Valley,Undermined,Fire_interval,Species,Recovery_Organ,Respr,Kill,Tot,Quads,Mortality
+1,BS1,side,no,40,Baeckea linifolia,L,250,7,257,19,0.027237354
+2,BS2,floor,no,40,Baeckea linifolia,L,38,0,38,11,0
+3,GGE2,floor,yes,6.2,Baeckea linifolia,L,0,4,4,5,1
+4,GGW1,side,yes,6.2,Baeckea linifolia,L,108,41,149,19,0.275167785
+5,GGW2,floor,yes,6.2,Baeckea linifolia,L,0,5,5,3,1
+6,HV1,side,no,6.2,Baeckea linifolia,L,25,14,39,18,0.358974359
+7,HV2,floor,no,6.2,Baeckea linifolia,L,33,1,34,15,0.029411765
+8,MW1,side,no,6.2,Baeckea linifolia,L,73,2,75,18,0.026666667
+9,MW2,floor,no,6.2,Baeckea linifolia,L,24,0,24,13,0
+73,BS1,side,no,40,Epacris paludosa,L,1,4,5,2,0.8
+74,CW2,floor,yes,40,Epacris paludosa,L,0,1,1,1,1
+75,GGE1,side,yes,6.2,Epacris paludosa,L,0,1,1,1,1
+76,GGE2,floor,yes,6.2,Epacris paludosa,L,0,2,2,1,1
+77,HV1,side,no,6.2,Epacris paludosa,L,0,24,24,8,1
+78,HV2,floor,no,6.2,Epacris paludosa,L,5,2,7,5,0.285714286
+79,MW1,side,no,6.2,Epacris paludosa,L,18,0,18,12,0
+80,SS1,side,no,40,Epacris paludosa,L,6,12,18,7,0.666666667
+92,BS1,side,no,40,Grevillea acanthifolia subsp. acanthifolia,L,3,5,8,7,0.625
+93,CW1,side,yes,40,Grevillea acanthifolia subsp. acanthifolia,L,0,1,1,1,1
+94,CW2,floor,yes,40,Grevillea acanthifolia subsp. acanthifolia,L,0,21,21,13,1
+95,GGE1,side,yes,6.2,Grevillea acanthifolia subsp. acanthifolia,L,3,6,9,8,0.666666667
+96,GGE2,floor,yes,6.2,Grevillea acanthifolia subsp. acanthifolia,L,0,8,8,8,1
+97,GGW2,floor,yes,6.2,Grevillea acanthifolia subsp. acanthifolia,L,3,3,6,5,0.5
+98,HV1,side,no,6.2,Grevillea acanthifolia subsp. acanthifolia,L,8,3,11,5,0.272727273
+99,HV2,floor,no,6.2,Grevillea acanthifolia subsp. acanthifolia,L,18,2,20,12,0.1
+100,MW1,side,no,6.2,Grevillea acanthifolia subsp. acanthifolia,L,1,0,1,4,0
+101,MW2,floor,no,6.2,Grevillea acanthifolia subsp. acanthifolia,L,20,0,20,10,0
+102,SS1,side,no,40,Grevillea acanthifolia subsp. acanthifolia,L,6,3,9,9,0.333333333
+103,BS2,floor,no,40,Gymnoschoenus sphaerocephalus,B1,58,0,58,19,0
+104,CW1,side,yes,40,Gymnoschoenus sphaerocephalus,B1,1,17,18,14,0.944444444
+105,CW2,floor,yes,40,Gymnoschoenus sphaerocephalus,B1,0,5,5,3,1
+106,GGE1,side,yes,6.2,Gymnoschoenus sphaerocephalus,B1,3,0,3,2,0
+107,GGW2,floor,yes,6.2,Gymnoschoenus sphaerocephalus,B1,0,2,2,1,1
+108,HV1,side,no,6.2,Gymnoschoenus sphaerocephalus,B1,30,8,38,14,0.210526316
+109,HV2,floor,no,6.2,Gymnoschoenus sphaerocephalus,B1,23,0,23,11,0
+110,MW1,side,no,6.2,Gymnoschoenus sphaerocephalus,B1,22,0,22,11,0
+111,MW2,floor,no,6.2,Gymnoschoenus sphaerocephalus,B1,1,0,1,1,0
+128,BS1,side,no,40,Leptospermum grandifolium,L,16,11,27,12,0.407407407
+129,BS2,floor,no,40,Leptospermum grandifolium,L,5,0,5,5,0
+130,CW1,side,yes,40,Leptospermum grandifolium,L,0,10,10,9,1
+131,CW2,floor,yes,40,Leptospermum grandifolium,L,0,14,14,10,1
+132,GGE1,side,yes,6.2,Leptospermum grandifolium,L,2,0,2,2,0
+133,GGE2,floor,yes,6.2,Leptospermum grandifolium,L,0,23,23,21,1
+134,GGW1,side,yes,6.2,Leptospermum grandifolium,L,10,20,30,10,0.666666667
+135,GGW2,floor,yes,6.2,Leptospermum grandifolium,L,1,22,23,13,0.956521739
+136,HV1,side,no,6.2,Leptospermum grandifolium,L,6,5,11,5,0.454545455
+137,HV2,floor,no,6.2,Leptospermum grandifolium,L,39,3,42,13,0.071428571
+138,MW1,side,no,6.2,Leptospermum grandifolium,L,6,1,7,7,0.142857143
+139,MW2,floor,no,6.2,Leptospermum grandifolium,L,16,0,16,12,0
+140,SS1,side,no,40,Leptospermum grandifolium,L,48,29,77,18,0.376623377
+192,BS2,floor,no,40,Xyris ustulata,B1,100,0,100,19,0
+193,CW1,side,yes,40,Xyris ustulata,B1,2,10,12,8,0.833333333
+194,CW2,floor,yes,40,Xyris ustulata,B1,1,0,1,1,0
+195,GGE1,side,yes,6.2,Xyris ustulata,B1,1,1,2,2,0.5
+196,GGE2,floor,yes,6.2,Xyris ustulata,B1,4,11,15,8,0.733333333
+197,GGW1,side,yes,6.2,Xyris ustulata,B1,3,0,3,3,0
+198,GGW2,floor,yes,6.2,Xyris ustulata,B1,0,11,11,6,1
+199,HV1,side,no,6.2,Xyris ustulata,B1,35,0,35,14,0
+200,HV2,floor,no,6.2,Xyris ustulata,B1,35,0,35,9,0
+201,MW1,side,no,6.2,Xyris ustulata,B1,34,0,34,12,0
+202,MW2,floor,no,6.2,Xyris ustulata,B1,3,0,3,2,0
+203,SS1,side,no,40,Xyris ustulata,B1,26,1,27,10,0.037037037

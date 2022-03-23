@@ -1,0 +1,262 @@
+---
+title: "Soil Moisture - Linear mixed effects model"
+output: html_notebook
+---
+
+Model for the effect of mining on soil moisture in Newnes swamps. Code by José R. Ferrer-Paris with contribution from David Keith and Martin Krogh
+
+# Preliminaries
+## Load required packages
+
+```{r}
+library(nlme)
+library(ggplot2)
+```
+
+## Read data from CSV file
+
+Data: Newnes swamps soil moisture survey Jan 2013 - Mar 2022 Martin Krogh & Sarsha Gorissen
+
+Read in the data from csv file, which has a header row for col labels and in which character values are not to be converted to factors.
+
+```{r}
+newnsoil = read.csv("NewnSoilMoist.csv", header=T, row.names=NULL, stringsAsFactors = FALSE)
+```
+
+Modify columns in the data frame:
+
+```{r}
+newnsoil$Mine <- factor(newnsoil$Mining,levels=c("Unmined reference", "Mined"))
+newnsoil$logYears <- log(newnsoil$Time - 2014)
+newnsoil$Rain = newnsoil$Rainfall_3mth
+newnsoil$SoilMoisture = newnsoil$Soil_moisture
+newnsoil$Site <- factor(newnsoil$Site)
+```
+
+# Linear mixed effects model
+
+We are interested in Soil Moisture (in %), and consider three explanatory variables: `log(Years since 2014)`, a factor with two levels for mined and unmined sites (using treatment contrasts), and the rain in the three months prior to sampling.
+
+Check contrasts for the `Mine` factor:
+
+```{r}
+contrasts(newnsoil$Mine)
+```
+
+
+We added one random effect of Site and a constant variance function with two different levels for mined and unmined sites. The variance is fixed to one for the control level (`Unmined reference`), and estimate for the treatment level (`Mined`): 
+
+```{r}
+mdl000 <- lme(SoilMoisture ~ logYears * Mine + Rain, 
+              random = ~ 1 | Site, 
+              weights = varIdent(form= ~ 1 | Mine), 
+              data=newnsoil)
+```
+
+Here is the summary of the fitted model. Degrees of Freedom in the coefficient table are denominator degrees of freedom, see discussion about their interpretation on: https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#why-doesnt-lme4-display-denominator-degrees-of-freedomp-values-what-other-options-do-i-have 
+
+```{r}
+summary(mdl000)
+```
+
+Approximated 95% confidence intervals for the variance components:
+
+```{r}
+intervals(mdl000,which='var-cov')
+```
+## Residuals 
+
+There is a long tail of negative residuals in reference sites with high predicted values (see lower values in Sites HV and SS in the plot of the prediction).
+
+```{r}
+plot(mdl000)
+```
+
+We can try transforming our response variable (`arcsin(SoilMoisture/100)`): 
+
+```{r}
+
+newnsoil$tSM <- metafor::transf.arcsin(newnsoil$SoilMoisture/100)
+mdl001 <- lme(tSM ~ logYears * Mine + Rain, 
+              random = ~ 1 | Site, 
+              weights = varIdent(form= ~ 1 | Mine), 
+              data=newnsoil)
+summary(mdl001)
+```
+Compare residuals of this model:
+```{r}
+plot(mdl001)
+```
+
+Comparing side by side:
+
+```{r}
+layout(matrix(1:2,ncol=2))
+hist(residuals(mdl000))
+hist(residuals(mdl001))
+```
+
+## Prediction from the model
+
+Approximate 95% confidence intervals of the prediction using "non-parametric case bootstrap coupled with individual residual bootstrap" following instruction in https://stats.stackexchange.com/questions/231074/confidence-intervals-on-predictions-for-a-non-linear-mixed-model-nlme and https://doi.org/10.1002/pst.1561
+
+First we will define a couple of functions:
+
+Get the 95 % confidence intervals of a data.frame/matrix:
+```{r}
+get_CI <- function(y,pref="") {
+  r1 <- t(apply(y,1,quantile,c(0.025,0.975),na.rm=T))
+  setNames(as.data.frame(r1),paste0(pref,c("lwr","upr")))
+}
+```
+
+Bootstrap sampling based on the fitted model and residuals:
+```{r}
+sampfun <- function(fitted,data,idvar="Site") {
+  pp <- predict(fitted,level=1)
+  rr <- residuals(fitted)
+  dd <- data.frame(data,pred=pp,res=rr)
+  ## sample groups with replacement
+  iv <- levels(data[[idvar]])
+  bsamp1 <- sample(iv,size=length(iv),replace=TRUE)
+  bsamp2 <- lapply(bsamp1,
+                   function(x) {
+                     ## within groups, sample *residuals* with replacement
+                     ddb <- dd[dd[[idvar]]==x,]
+                     ## bootstrapped response = pred + bootstrapped residual
+                     ddb$SoilMoisture <- ddb$pred +
+                       sample(ddb$res,size=nrow(ddb),replace=TRUE)
+                     return(ddb)
+                   })
+  res <- do.call(rbind,bsamp2)  ## collect results
+  if (is(data,"groupedData"))
+    res <- groupedData(res,formula=formula(data))
+  return(res)
+}
+
+```
+
+Return prediction from re-fitted model
+```{r}
+pfun <- function(fm) {
+  res <- try(predict(fm,newdata=pframe,level=1))
+  if (!any(class(res) %in% "try-error"))
+    return(res)
+}
+```
+
+Now we apply this code to get 1000s replicates of predictions at each observation point for three different values of the rain co-variate (ignoring error messages here, and keeping only successful runs):
+
+```{r eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE, error=FALSE}
+pframe <- newnsoil
+pframe$SoilMoisture <- predict(mdl000,newdata=pframe,level=1)
+
+nresamp <- 1000
+yvals <- list()
+## we want to consider the full range of rain values 
+for (qq in c(0.025,0.5,0.975)) {
+  pframe$Rain <- quantile(newnsoil$Rain,qq)
+  yvals2 <- replicate(nresamp,
+                      pfun(update(mdl000,
+                                  data=sampfun(mdl000,
+                                               newnsoil, 
+                                               "Site"))))
+  yvals <- c(yvals,yvals2[lengths(yvals2)==440])
+}
+
+```
+
+Now we apply this code to get the envelope based on the bootstrap:
+
+```{r}
+c2 <- get_CI(as.data.frame(yvals),"boot_")
+prd.env <- aggregate(c2,list(Site=newnsoil$Site,Mine=newnsoil$Mine,Time=newnsoil$Time),median)
+
+```
+
+
+## Figure
+
+Set up the basic elements of the plot:
+```{r}
+clrs <- palette()[c(3,7)]
+names(clrs) <- c("Unmined reference","Mined")
+
+basic_plot <- ggplot(data = newnsoil) + 
+  geom_point(aes(x = Time, 
+                 y = SoilMoisture,
+                 colour=Mine),size=2) +
+  ggtitle("") +
+  xlab("Year") + ylab("Volumetric Soil Moisture (%)") +
+  scale_x_continuous(name="Year", breaks=2015:2022) +
+  scale_color_discrete(type = clrs)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + guides(colour='none')
+
+```
+
+This is the version of the plot with facets showing the six sites:
+
+```{r}
+basic_plot + facet_wrap(vars(Mine,Site),ncol=3,nrow=2)
+```
+
+Now we want to add the prediction with fitted curves and uncertainty:
+
+```{r fig.height=7, fig.width=9}
+nwdt <- expand.grid(Site=unique(newnsoil$Site), 
+                    Time=seq(2015,2022.1,length=15))
+nwdt$Mine <- newnsoil$Mine[match(nwdt$Site,newnsoil$Site)]
+nwdt$logYears <- log1p(nwdt$Time-2015)
+nwdt$Rain <- quantile(newnsoil$Rain,.5)
+nwdt["pred"] <- predict(mdl201,nwdt,level=1)
+
+
+basic_plot + facet_wrap(vars(Mine,Site),ncol=3,nrow=2)  +
+  geom_line(data=nwdt,
+            aes(x=Time,y=pred), color='black',lwd=1)  +
+  geom_ribbon(data=prd.env, aes(x=Time, ymin = boot_lwr, ymax = boot_upr),color=NA, lty=0, alpha = 0.2) 
+
+```
+
+
+## Non-linear model
+
+We could try to model decline in soil moisture as a log-logistic function (https://www.statforbiology.com/nonlinearregression/usefulequations#sygmoidal_curves). Function `SSfpl` implements the four parameter logistic or log-logistic function. 
+
+First step to fit a non-linear mixed effect model is to find the appropriate function to describe the trend. Here I tried a non-linear model fit for each Site using the `nlsList` function, but it does not converge for four sites.
+
+```{r}
+data <- newnsoil[,c("Site","Replicate","Mine","Rain","SoilMoisture")]
+data$Time <- newnsoil$Time-2014
+grData <- groupedData(SoilMoisture~Time+Rain|Site,data)
+
+fm1 <- nlsList(SoilMoisture ~ SSfpl(Time, A, B, xmid, scal),
+               start=c(A=90,B=c(30),xmid=1.3,scal=1.3),
+               data = grData)
+fm1
+
+```
+Outcome of the model is very sensitive to starting values. 
+
+The model fitted to site GGE looks good:
+```{r}
+x <- subset(grData,Site=="GGE")$Time 
+y <- subset(grData,Site=="GGE")$SoilMoisture
+predx <- data.frame(Time=seq(1,9,length=50))
+predy <- predict(fm1[["GGE"]],newdata=predx)
+plot(x,y,xlab="Time",ylab="Soil Moisture %")
+lines(predx$Time,predy)
+```
+
+The model fitted to site SS is Ok, but the response is very flat, so the selected fuction is not a good descriptor (not very informative) :
+```{r}
+x <- subset(grData,Site=="SS")$Time 
+y <- subset(grData,Site=="SS")$SoilMoisture
+predx <- data.frame(Time=seq(1,9,length=50))
+predy <- predict(fm1[["SS"]],newdata=predx)
+plot(x,y,xlab="Time",ylab="Soil Moisture %")
+lines(predx$Time,predy)
+```
+
+I have not been able to fit this function or alternative parametrizations (see `SSweibull`, `SSgompertz`, `SSlogis`) to the other sites, even when restricting the model to the three mined sites and changing the starting values. It looks to me like the response of soil moisture follow different trends in each site, and a single model can not quite capture this variation.
+
+Without a good initial fit, it is not possible to fit a more complex model using the `nlme` function.

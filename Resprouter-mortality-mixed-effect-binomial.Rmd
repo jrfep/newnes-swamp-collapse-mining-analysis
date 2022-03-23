@@ -1,0 +1,103 @@
+---
+title: "Newnes Mortality Recruitment"
+output: html_notebook
+---
+
+Model for the effect of mining on plant mortality in Newnes swamps. Code by José R. Ferrer-Paris adapted from David Keith's original.
+
+# Preliminaries
+
+## libraries
+
+```{r}
+require(tidyverse)
+require(ggeffects)
+require(tidyverse)
+require(lme4)
+```
+
+## Data
+object name for newnes mortality in detectable resprouters (i.e. dead remains identifiable) - newnmd
+
+```{r}
+newnmd = read.csv("NewnesResprouterMortality_SixDetectableSpp.csv", header=T, row.names=1, stringsAsFactors = FALSE)
+```
+
+define variables
+
+```{r}
+
+(newnmd %>% transmute(Val=Valley, Mine=Undermined, Fire=Fire_interval, RecOrgan=Recovery_Organ, Kill, Respr, Mort=Kill/Tot, Sppf=factor(Species)) -> data)
+
+```
+
+# FIRE MORTALITY - DETECTABLE RESPROUTERS
+
+Fit fixed factors first (no random factor)
+
+```{r}
+model <- glm(cbind(Kill,Respr)~Mine*Val, data, family=binomial)
+summary(model) # see p. 634 Crawley
+```
+There are many extreme values (Full mortality or full resprouting):
+
+```{r}
+hist(data$Mort)
+```
+
+Complementary log-log link might be more appropriate in this case, but results are similar for the fixed effect model (not shown):
+
+```{r,eval=FALSE}
+model2 <- glm(cbind(Kill,Respr)~Mine*Val, data, family=binomial("cloglog"))
+summary(model2) 
+
+```
+
+
+Check overdispersion - is residual dev >1.5 times greater than residual df? YES it is.
+
+Using a random factor - need a mixed model to deal with random effects of different types of recovery organ. This site has the design & code https://cran.r-project.org/web/packages/ggeffects/vignettes/practical_logisticmixedmodel.html
+
+
+```{r}
+model2 <- glmer(cbind(Kill,Respr) ~ Mine * Val + (1|Sppf), dat=data, family = binomial(link = "logit"))
+summary(model2)
+plot(model2)
+```
+Test the complementary-log-log link, some minor differences in residuals, but higher AIC, so we will ignore for now  :
+
+```{r}
+model3 <- glmer(cbind(Kill,Respr) ~ Mine * Val + (1|Sppf), dat=data, family = binomial(link = "cloglog"))
+AIC(model2,model3)
+```
+
+This will print the predicted values and CIs :
+```{r}
+
+ggpredict(model2, c("Mine", "Val")) 
+
+```
+This will plot the same information:
+
+```{r}
+ggpredict(model2, c("Mine", "Val")) %>% plot() 
+
+
+```
+A boxplot of the predictions (based on the logit model):
+
+```{r}
+data$prd <- predict(model2,type="response")
+boxplot(prd~Val+Mine,data, xlab = "Landform & mining treatment", ylab ="Fire mortality of detectable resprouter plant species",
+        cex.axis = 0.85,  names = c("valley floor \n unmined", "valley side \n unmined", "valley floor \n mined", "valley side \n mined"),
+        col = c(3,3,7,7))
+```
+
+
+Compare with boxplot of raw values:
+```{r}
+boxplot(Mort ~ Val + Mine, data, xlab = "Landform & mining treatment", ylab ="Fire mortality (raw values)",
+        cex.axis = 0.85,  names = c("valley floor \n unmined", "valley side \n unmined", "valley floor \n mined", "valley side \n mined"),
+        col = c(3,3,7,7))
+
+```
