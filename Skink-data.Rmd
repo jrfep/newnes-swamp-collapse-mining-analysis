@@ -44,7 +44,7 @@ ggplot(skink, aes(y = SkinkCount, x=Time, colour = Site)) +
 Check contrasts for the `Mine` factor:
 
 ```{r}
-contrasts(newnsoil$Mine)
+contrasts(skink$Mine)
 ```
 
 We are including Time since 2014, Mine and Rain in the three months prior to sampling.
@@ -123,7 +123,7 @@ This is the plot with the prediction and 95% C.I. with the measured values of ra
 
 This is the plot with the prediction and 95% C.I. with the range of values of rain:
 
-```{r}
+```{r, fig.height=7,fig.width=9}
 
   basic_plot +
   geom_line(data=pred.data,aes(x=Time,y=prediction)) +  geom_ribbon(data=pred.data,aes(x=Time,y=prediction,ymin=pred_max_lower,ymax=pred_min_upper),col=NA,lty=0,alpha=0.2)
