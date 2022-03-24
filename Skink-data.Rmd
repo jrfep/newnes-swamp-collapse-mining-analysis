@@ -1,0 +1,131 @@
+---
+title: "Skink counts"
+output: html_notebook
+---
+
+Model for the effect of mining on skink counts in Newnes swamps. Code by José R. Ferrer-Paris and David Keith
+
+# Preliminaries
+## Load required packages
+
+```{r}
+require(tidyverse)
+require(magrittr)
+
+```
+
+## Read data from CSV file
+
+Data: Newnes swamps soil moisture survey Jan 2013 - Mar 2022 Martin Krogh & Sarsha Gorissen
+
+Read in the data from csv file, which has a header row for col labels and in which character values are not to be converted to factors.
+
+```{r}
+skink <- read_csv("NewnSkink.csv")
+```
+
+Modify columns in the data frame:
+
+```{r}
+skink %<>% mutate(Mine=factor(Mining,levels=c("Unmined reference", "Mined")),Years=Time-2014, Rain=Rainfall_3mth)
+```
+
+Visualise data:
+
+```{r}
+ggplot(skink, aes(x = SkinkCount, fill = Site)) +
+  geom_histogram() + facet_wrap(~ Site)
+ggplot(skink, aes(y = SkinkCount, x=Time, colour = Site)) +
+  geom_point() + facet_wrap(~ Site)
+```
+
+# Linear mixed effects model
+
+Check contrasts for the `Mine` factor:
+
+```{r}
+contrasts(newnsoil$Mine)
+```
+
+We are including Time since 2014, Mine and Rain in the three months prior to sampling.
+
+We are using a generalized linear model with Poisson error distribution:
+
+```{r}
+mdl <- glm(SkinkCount ~ Years * Mine + Rain , skink,family=poisson)
+summary(mdl)
+```
+
+## Residuals
+
+Check residuals of the model, it looks OK
+
+```{r}
+plot(mdl)
+```
+
+
+## Prediction from the model
+
+We calculate model predictions and confidence intervals for the original values of Rain:
+
+
+```{r}
+
+pred.data <- skink # %>% mutate(Rain=median(Rainfall_3mth))
+prd <- predict(mdl,pred.data,type="link",se.fit=T)
+ilink <- mdl$family$linkinv
+pred.data$prediction <- ilink(prd$fit)
+pred.data$pred_upper <- ilink(prd$fit + 1.96 * prd$se.fit)
+pred.data$pred_lower <- ilink(prd$fit - 1.96 * prd$se.fit)
+```
+
+But we also want to check the prediction confidence interval for the range of rainfall values:
+
+```{r}
+
+pred.data %<>%  mutate(Rain=min(Rainfall_3mth))
+prd <- predict(mdl,pred.data,type="link",se.fit=T)
+pred.data$pred_min_upper <- ilink(prd$fit + 1.96 * prd$se.fit)
+pred.data$pred_min_lower <- ilink(prd$fit - 1.96 * prd$se.fit)
+
+pred.data %<>%  mutate(Rain=max(Rainfall_3mth))
+prd <- predict(mdl,pred.data,type="link",se.fit=T)
+pred.data$pred_max_lower <- ilink(prd$fit - 1.96 * prd$se.fit)
+pred.data$pred_max_upper <- ilink(prd$fit + 1.96 * prd$se.fit)
+```
+
+
+## Figure
+
+First create a basic plot:
+
+```{r}
+clrs <- palette()[c(3,7)]
+names(clrs) <- c("Unmined reference","Mined")
+
+basic_plot <-
+ggplot(skink) + geom_point(aes(y = SkinkCount, x=Time, colour = Mine),size=2) + ggtitle("") +
+  xlab("Year") + ylab("Count of Skinks") +
+  scale_x_continuous(name="Year", breaks=2015:2022) +
+  scale_color_discrete(type = clrs)  + theme_bw() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + guides(colour='none') + facet_wrap(vars(Mine,Site),ncol=3,nrow=2)
+
+```
+
+This is the plot with the prediction and 95% C.I. with the measured values of rain:
+
+```{r}
+
+  basic_plot +
+  geom_line(data=pred.data,aes(x=Time,y=prediction)) +  geom_ribbon(data=pred.data,aes(x=Time,y=prediction,ymin=pred_lower,ymax=pred_upper),col=NA,lty=0,alpha=0.3)
+
+```
+
+This is the plot with the prediction and 95% C.I. with the range of values of rain:
+
+```{r}
+
+  basic_plot +
+  geom_line(data=pred.data,aes(x=Time,y=prediction)) +  geom_ribbon(data=pred.data,aes(x=Time,y=prediction,ymin=pred_max_lower,ymax=pred_min_upper),col=NA,lty=0,alpha=0.2)
+
+```
